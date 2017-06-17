@@ -1,94 +1,44 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
-	"regexp"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	BASE_BRANCH = "master"
+	//nolint
+	RootCmd = &cobra.Command{
+		Use:   "breaking [packages]",
+		Short: "Find all breaking changes to functions and methods in a Go project using git",
+		RunE:  rootCmd,
+	}
 
-	// match all functions and methods in the git diff
-	regexFuncs = regexp.MustCompile(`[\-\+]func (\((.*?)\) )?([A-Z]\w*)\(.*?\).*\{`)
+	flagBranch    = "branch"
+	flagChangelog = "changelog"
 )
 
-type Function struct {
-	def1 string
-	def2 string
-}
-
-func findMatches(dir string) {
-	funcs := make(map[string]Function)    // all matches in the diff
-	breaking := make(map[string]Function) // all matches which broke in the diff
-
-	buf := new(bytes.Buffer)
-	cmd := exec.Command("git", "diff", BASE_BRANCH, dir)
-	if dir == "" {
-		cmd = exec.Command("git", "diff", BASE_BRANCH)
-	}
-	cmd.Stdout = buf
-	cmd.Run()
-
-	matches := regexFuncs.FindAllSubmatch(buf.Bytes(), -1)
-	for _, m := range matches {
-		def := string(m[0])
-		receiver := string(m[2])
-		name := string(m[3])
-		if receiver != "" {
-			name = fmt.Sprintf("(%s).%s", receiver, name)
-		}
-
-		funcInfo, ok := funcs[name]
-		if ok {
-			// if nothings changed, ignore
-			// NOTE: we exclude the prefix -/+ from the diff
-			if def[1:] == funcInfo.def1[1:] {
-				continue
-			}
-
-			// if its changed, it should only change once
-			if funcInfo.def2 != "" && def[1:] != funcInfo.def2[1:] {
-				fmt.Println(name)
-				fmt.Println(def)
-				fmt.Println(funcInfo.def1)
-				fmt.Println(funcInfo.def2)
-				panic("")
-			}
-
-			funcInfo.def2 = def
-			funcs[name] = funcInfo
-			continue
-		}
-
-		funcs[name] = Function{def1: def}
-	}
-
-	// suss out just the breaking changes
-	for n, f := range funcs {
-		if f.def2 != "" {
-			breaking[n] = f
-		}
-	}
-
-	for n, f := range breaking {
-		fmt.Println(n)
-		fmt.Println(f.def1)
-		fmt.Println(f.def2)
-		fmt.Println("")
-	}
-
+func init() {
+	RootCmd.Flags().String(flagBranch, "master", "Base branch to compare code too")
+	RootCmd.Flags().String(flagChangelog, "CHANGELOG.md", "Changelog file to add information too")
 }
 
 func main() {
-	var args []string
-	if len(os.Args) > 1 {
-		args = os.Args[1:]
+	err := RootCmd.Execute()
+	if err != nil {
+		fmt.Printf("%+v\n", err)
 	}
+}
 
+func rootCmd(cmd *cobra.Command, args []string) (err error) {
+
+	//Get the base branch from viper
+	baseBranch := viper.GetString(flagBranch)
+
+	var out string
 	if len(args) > 0 {
 		for _, dir := range args {
 			dir = strings.Trim(dir, ".")
@@ -96,10 +46,30 @@ func main() {
 			fmt.Println("-----------------------------------------------")
 			fmt.Println(dir)
 			fmt.Println("-----------------------------------------------")
-			findMatches(dir)
+			out, err = findMatches(dir, baseBranch)
+			if err != nil {
+				return
+			}
 		}
 	} else {
-		findMatches("")
+		out, err = findMatches("", baseBranch)
+		if err != nil {
+			return
+		}
 	}
 
+	//Load changelog, write output
+	pathChangelog := viper.GetString(flagChangelog)
+	fmt.Printf("debug %v\n", pathChangelog)
+	if _, err := os.Stat(pathChangelog); os.IsNotExist(err) {
+		//if the changelog file does not exist simply write to the stdout
+		fmt.Println("Could not load changelog file, here are the results:")
+		fmt.Println(out)
+	} else {
+		//if the changelog does exist, insert output into the second line
+		fmt.Println("Writing to changelog file")
+		InsertStringToFile(pathChangelog, out, 2)
+	}
+
+	return
 }
