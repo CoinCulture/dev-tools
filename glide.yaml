@@ -1,0 +1,5 @@
+package: github.com/coinculture/dev-tools
+import:
+- package: github.com/codegangsta/cli
+- package: github.com/pkg/errors
+- package: github.com/spf13/cobra

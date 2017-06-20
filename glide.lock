@@ -1,0 +1,14 @@
+hash: 87375607968579a7d87823752d8c66369c85bc3f6aa1649e029fc748d71d4adf
+updated: 2017-06-20T19:31:01.32455382-04:00
+imports:
+- name: github.com/codegangsta/cli
+  version: cf33a9befefdd6c6ea1a236ab6d546e797a62cbf
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/pkg/errors
+  version: c605e284fe17294bda444b34710735b29d1a9d90
+- name: github.com/spf13/cobra
+  version: b4dbd37a01839e0653eec12aa4bbb2a2ce7b2a37
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+testImports: []
