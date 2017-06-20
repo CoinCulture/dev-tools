@@ -9,18 +9,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-// match all functions and methods in the git diff
+// Match all functions and methods in the git diff
 var regexFuncs = regexp.MustCompile(`[\-\+]func (\((.*?)\) )?([A-Z]\w*)\(.*?\).*\{`)
 
-//Function TODO add description here
-type Function struct {
+// The old and new definitions of a function in the code
+type function struct {
 	def1 string
 	def2 string
 }
 
 func findMatches(dir, baseBranch string) (output string, err error) {
-	funcs := make(map[string]Function)    // all matches in the diff
-	breaking := make(map[string]Function) // all matches which broke in the diff
+	funcs := make(map[string]function)    // all matches in the diff
+	breaking := make(map[string]function) // all matches which broke in the diff
 
 	buf := new(bytes.Buffer)
 	cmd := exec.Command("git", "diff", baseBranch, dir)
@@ -59,7 +59,7 @@ func findMatches(dir, baseBranch string) (output string, err error) {
 			continue
 		}
 
-		funcs[name] = Function{def1: def}
+		funcs[name] = function{def1: def}
 	}
 
 	// suss out just the breaking changes

@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	//nolint
+	//nolint - exported so can be added to other packages
 	RootCmd = &cobra.Command{
 		Use:   "breaking [packages]",
-		Short: "Find all breaking changes to functions and methods in a Go project using git",
+		Short: "Find all breaking changes to functions and methods in a Go project, using git",
 		RunE:  rootCmd,
 	}
 
