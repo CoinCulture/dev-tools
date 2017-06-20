@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -17,13 +16,13 @@ var (
 		RunE:  rootCmd,
 	}
 
-	flagBranch    = "branch"
-	flagChangelog = "changelog"
+	baseBranch    string
+	pathChangelog string
 )
 
 func init() {
-	RootCmd.Flags().String(flagBranch, "master", "Base branch to compare code too")
-	RootCmd.Flags().String(flagChangelog, "CHANGELOG.md", "Changelog file to add information too")
+	RootCmd.Flags().StringVar(&baseBranch, "branch", "master", "Base branch to compare code too")
+	RootCmd.Flags().StringVar(&pathChangelog, "changelog", "CHANGELOG.md", "Changelog file to add information too")
 }
 
 func main() {
@@ -34,9 +33,6 @@ func main() {
 }
 
 func rootCmd(cmd *cobra.Command, args []string) (err error) {
-
-	//Get the base branch from viper
-	baseBranch := viper.GetString(flagBranch)
 
 	var out string
 	if len(args) > 0 {
@@ -59,8 +55,6 @@ func rootCmd(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	//Load changelog, write output
-	pathChangelog := viper.GetString(flagChangelog)
-	fmt.Printf("debug %v\n", pathChangelog)
 	if _, err := os.Stat(pathChangelog); os.IsNotExist(err) {
 		//if the changelog file does not exist simply write to the stdout
 		fmt.Println("Could not load changelog file, here are the results:")
